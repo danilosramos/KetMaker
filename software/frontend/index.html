@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ketmaker - Quantum Composer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --cell-size: 64px;
+            --grid-color: #334155;
+            /* slate-700 */
+            --wire-color: #94a3b8;
+            /* slate-400 */
+        }
+
+        body {
+            background-color: #0f172a;
+            /* slate-900 */
+            color: #e2e8f0;
+            /* slate-200 */
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            /* Prevent body scroll, handle in main */
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Grid & Circuit Styles */
+        .circuit-container {
+            position: relative;
+            overflow: auto;
+            flex: 1;
+            background-image:
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: var(--cell-size) var(--cell-size);
+            background-position: 4rem 0;
+            /* Offset for qubit labels */
+        }
+
+        .qubit-row {
+            display: flex;
+            height: var(--cell-size);
+            position: relative;
+            align-items: center;
+        }
+
+        .qubit-label {
+            width: 4rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            /* slate-800 */
+            border-right: 1px solid var(--grid-color);
+            border-bottom: 1px solid var(--grid-color);
+            z-index: 10;
+            position: sticky;
+            left: 0;
+            font-family: monospace;
+            font-size: 1.1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .qubit-label:hover {
+            background: #334155;
+        }
+
+        .wire {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background-color: var(--wire-color);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .cell.drag-over {
+            background-color: rgba(59, 130, 246, 0.2);
+            /* blue-500/20 */
+        }
+
+        /* Gates */
+        .gate {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            position: relative;
+        }
+
+        .gate:active {
+            cursor: grabbing;
+        }
+
+        /* Gate Colors (Flat, Scientific) */
+        .gate-X {
+            background-color: #0ea5e9;
+            color: white;
+        }
+
+        /* sky-500 */
+        .gate-Y {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        /* green-500 */
+        .gate-Z {
+            background-color: #e11d48;
+            color: white;
+        }
+
+        /* rose-600 */
+        .gate-H {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        /* amber-500 */
+        .gate-Control {
+            background-color: black;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+        }
+
+        .gate-Target {
+            background-color: transparent;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            color: #e2e8f0;
+            font-size: 1.2rem;
+        }
+
+        /* SVG Overlay */
+        #connections-layer {
+            position: absolute;
+            top: 0;
+            left: 4rem;
+            /* Match label width */
+            width: calc(100% - 4rem);
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            stroke: #94a3b8;
+            stroke-width: 2;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+
+        /* Context Menu */
+        #context-menu {
+            position: absolute;
+            z-index: 100;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 0.25rem 0;
+            min-width: 160px;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+
+        .context-menu-item:hover {
+            background-color: #334155;
+        }
+
+        /* Floating Help Button */
+        .help-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 50;
+        }
+
+        .help-btn:hover {
+            transform: scale(1.1);
+            background-color: #2563eb;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h1
+                class="text-2xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                Ketmaker</h1>
+            <p class="text-xs text-slate-400 mb-8 uppercase tracking-wider">Quantum Composer</p>
+
+            <div class="mb-8">
+                <h3 class="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">Gates</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="gate gate-X" draggable="true" data-type="X">X</div>
+                    <div class="gate gate-Y" draggable="true" data-type="Y">Y</div>
+                    <div class="gate gate-Z" draggable="true" data-type="Z">Z</div>
+                    <div class="gate gate-H" draggable="true" data-type="H">H</div>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-400 mt-6 mb-4 uppercase tracking-wider">Control</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="gate gate-Control mx-auto" draggable="true" data-type="Control" title="Control Dot">
+                    </div>
+                    <div class="gate gate-Target" draggable="true" data-type="Target" title="CNOT Target">⊕</div>
+                </div>
+            </div>
+
+            <div class="mt-auto space-y-3">
+                <button onclick="addQubit()"
+                    class="w-full py-2 px-4 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                    <span>+</span> Add Qubit
+                </button>
+                <button onclick="clearCircuit()"
+                    class="w-full py-2 px-4 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-900/50 rounded text-sm font-medium transition-colors">
+                    Clear All
+                </button>
+                <button onclick="executeCircuit()"
+                    class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 rounded text-sm font-bold shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-0.5">
+                    Run Experiment
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Circuit Area -->
+        <main class="flex-1 flex flex-col h-full relative">
+            <!-- Top Bar (Optional info or timeline) -->
+            <header class="h-12 border-b border-slate-700 flex items-center px-4 bg-slate-900/50 backdrop-blur">
+                <div class="text-xs text-slate-500 font-mono">
+                    TIMESTEPS →
+                </div>
+                <div id="status-msg" class="ml-auto text-sm font-medium opacity-0 transition-opacity"></div>
+            </header>
+
+            <!-- Circuit Grid Container -->
+            <div id="circuit-container" class="circuit-container">
+                <svg id="connections-layer"></svg>
+                <div id="rows-container" class="relative z-10">
+                    <!-- Rows generated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-section"
+        class="hidden absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4 transition-transform duration-300 transform translate-y-full">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-blue-400">Simulation Results</h2>
+            <button onclick="toggleResults()" class="text-slate-400 hover:text-white">&times;</button>
+        </div>
+        <div id="results-content" class="overflow-x-auto p-4 bg-slate-800 rounded">
+            <!-- KaTeX Results will go here -->
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu"></div>
+
+    <!-- Help Button -->
+    <div class="help-btn" onclick="showGlobalHelp()">?</div>
+
+    <!-- Modal -->
+    <div id="info-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal(event, true)">&times;</span>
+            <div id="modal-body">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CONFIG = {
+            cellSize: 64,
+            minCols: 12
+        };
+
+        // --- State Management ---
+        let state = {
+            qubits: ['|0⟩', '|0⟩'], // Initial states
+            gates: [
+                [], // Row 0 gates
+                []  // Row 1 gates
+            ]
+        };
+
+        // --- Documentation Data ---
+        const GATE_INFO = {
+            'X': {
+                description: "The Pauli-X gate acts as a quantum NOT gate. It flips the state of a qubit from |0⟩ to |1⟩ and vice versa.",
+                matrix: "\\begin{bmatrix} 0 & 1 \\\\ 1 & 0 \\end{bmatrix}",
+                truthTable: "Input |0⟩ → Output |1⟩<br>Input |1⟩ → Output |0⟩",
+                example: "Applying X to |0⟩ results in |1⟩."
+            },
+            'Y': {
+                description: "The Pauli-Y gate rotates the qubit around the Y-axis of the Bloch sphere by π radians.",
+                matrix: "\\begin{bmatrix} 0 & -i \\\\ i & 0 \\end{bmatrix}",
+                truthTable: "Input |0⟩ → Output i|1⟩<br>Input |1⟩ → Output -i|0⟩",
+                example: "Applying Y to |0⟩ results in i|1⟩."
+            },
+            'Z': {
+                description: "The Pauli-Z gate rotates the qubit around the Z-axis of the Bloch sphere by π radians. It flips the phase of the |1⟩ state.",
+                matrix: "\\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}",
+                truthTable: "Input |0⟩ → Output |0⟩<br>Input |1⟩ → Output -|1⟩",
+                example: "Applying Z to |+⟩ results in |-⟩."
+            },
+            'H': {
+                description: "The Hadamard gate creates a superposition state. It maps basis states to superpositions.",
+                matrix: "\\frac{1}{\\sqrt{2}} \\begin{bmatrix} 1 & 1 \\\\ 1 & -1 \\end{bmatrix}",
+                truthTable: "Input |0⟩ → Output |+⟩<br>Input |1⟩ → Output |-⟩",
+                example: "Applying H to |0⟩ creates an equal superposition."
+            },
+            'Control': {
+                description: "The Control node for a CNOT gate. It controls whether the target qubit is flipped.",
+                matrix: "\\text{Part of CNOT}",
+                truthTable: "If Control is |1⟩, Target is flipped.",
+                example: "Used with a Target node."
+            },
+            'Target': {
+                description: "The Target node for a CNOT gate. It is flipped if the control qubit is |1⟩.",
+                matrix: "\\begin{bmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\\\ 0 & 0 & 1 & 0 \\end{bmatrix}",
+                truthTable: "Standard CNOT truth table.",
+                example: "Flipped if Control is |1⟩."
+            }
+        };
+
+        // --- DOM Elements ---
+        const rowsContainer = document.getElementById('rows-container');
+        const connectionsLayer = document.getElementById('connections-layer');
+        const statusMsg = document.getElementById('status-msg');
+        const contextMenu = document.getElementById('context-menu');
+        const infoModal = document.getElementById('info-modal');
+        const modalBody = document.getElementById('modal-body');
+        const resultsSection = document.getElementById('results-section');
+        const resultsContent = document.getElementById('results-content');
+
+        // --- Initialization ---
+        function init() {
+            render();
+            setupDragAndDrop();
+            setupGlobalEvents();
+        }
+
+        // --- Global Events ---
+        function setupGlobalEvents() {
+            // Close context menu on click anywhere
+            document.addEventListener('click', () => {
+                contextMenu.style.display = 'none';
+            });
+        }
+
+        // --- Modal Logic ---
+        function closeModal(e, force = false) {
+            if (force || e.target === infoModal) {
+                infoModal.style.display = 'none';
+            }
+        }
+
+        function showGlobalHelp() {
+            modalBody.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-blue-400">Welcome to Ketmaker</h2>
+                <p class="mb-4">Ketmaker is a visual quantum circuit composer. Here's how to use it:</p>
+                <ul class="list-disc pl-5 space-y-2 mb-6">
+                    <li><strong>Add Qubits:</strong> Click the "+ Add Qubit" button in the sidebar.</li>
+                    <li><strong>Add Gates:</strong> Drag and drop gates (X, Y, Z, H) from the sidebar onto the grid.</li>
+                    <li><strong>Move Gates:</strong> Drag existing gates to new positions.</li>
+                    <li><strong>Remove Gates:</strong> Click on a gate to remove it.</li>
+                    <li><strong>Context Menu:</strong> Right-click on a Qubit Label or Wire to delete the line. Right-click on a Gate for details.</li>
+                    <li><strong>Run Experiment:</strong> Click "Run Experiment" to simulate the circuit.</li>
+                </ul>
+                <p class="text-sm text-slate-400">Built with Vanilla JS and Tailwind CSS.</p>
+            `;
+            infoModal.style.display = 'flex';
+        }
+
+        function showGateInfo(type) {
+            const info = GATE_INFO[type];
+            if (!info) return;
+
+            modalBody.innerHTML = `
+                <h2 class="text-2xl font-bold mb-2 text-blue-400">${type} Gate</h2>
+                <p class="mb-4 text-slate-300">${info.description}</p>
+                
+                <h3 class="text-lg font-semibold mb-2 text-slate-200">Unitary Matrix</h3>
+                <div id="katex-matrix" class="mb-6 p-4 bg-slate-800 rounded overflow-x-auto"></div>
+
+                <h3 class="text-lg font-semibold mb-2 text-slate-200">Truth Table / Effect</h3>
+                <div class="mb-6 p-4 bg-slate-800 rounded text-sm font-mono">
+                    ${info.truthTable}
+                </div>
+
+                <h3 class="text-lg font-semibold mb-2 text-slate-200">Example</h3>
+                <p class="text-slate-300">${info.example}</p>
+            `;
+
+            // Render KaTeX
+            try {
+                katex.render(info.matrix, document.getElementById('katex-matrix'), {
+                    throwOnError: false,
+                    displayMode: true
+                });
+            } catch (e) {
+                console.error("KaTeX error:", e);
+            }
+
+            infoModal.style.display = 'flex';
+        }
+
+        // --- Results Logic ---
+        function toggleResults(show) {
+            if (show === undefined) {
+                resultsSection.classList.toggle('translate-y-full');
+                resultsSection.classList.toggle('hidden');
+            } else if (show) {
+                resultsSection.classList.remove('hidden');
+                // Small delay to allow display:block to apply before transition
+                setTimeout(() => resultsSection.classList.remove('translate-y-full'), 10);
+            } else {
+                resultsSection.classList.add('translate-y-full');
+                setTimeout(() => resultsSection.classList.add('hidden'), 300);
+            }
+        }
+
+        function renderResults(latex) {
+            if (!latex) return;
+
+            try {
+                katex.render(latex, resultsContent, {
+                    throwOnError: false,
+                    displayMode: true
+                });
+                toggleResults(true);
+            } catch (e) {
+                console.error("KaTeX error:", e);
+                resultsContent.textContent = "Error rendering results.";
+                toggleResults(true);
+            }
+        }
+
+        // --- Context Menu Logic ---
+        function showContextMenu(e, type, data) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            contextMenu.innerHTML = '';
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+
+            if (type === 'qubit') {
+                const deleteOption = document.createElement('div');
+                deleteOption.className = 'context-menu-item';
+                deleteOption.textContent = 'Delete Qubit Line';
+                deleteOption.onclick = () => deleteQubit(data); // data is index
+                contextMenu.appendChild(deleteOption);
+            } else if (type === 'gate') {
+                const infoOption = document.createElement('div');
+                infoOption.className = 'context-menu-item';
+                infoOption.textContent = 'Gate Info';
+                infoOption.onclick = () => showGateInfo(data); // data is gateType
+                contextMenu.appendChild(infoOption);
+            }
+        }
+
+        function deleteQubit(index) {
+            if (state.qubits.length <= 1) {
+                showStatus('Cannot delete last qubit', 'text-red-400');
+                return;
+            }
+            state.qubits.splice(index, 1);
+            state.gates.splice(index, 1);
+            render();
+        }
+
+        // --- Rendering ---
+        function render() {
+            // Clear container
+            rowsContainer.innerHTML = '';
+
+            // Determine grid width (max gates + padding)
+            const maxGates = Math.max(...state.gates.map(r => r.length), 0);
+            const totalCols = Math.max(maxGates + 5, CONFIG.minCols);
+
+            // Update SVG layer size
+            connectionsLayer.setAttribute('width', totalCols * CONFIG.cellSize);
+            connectionsLayer.setAttribute('height', state.qubits.length * CONFIG.cellSize);
+            connectionsLayer.innerHTML = ''; // Clear lines
+
+            // Render Rows
+            state.qubits.forEach((qubitState, rowIndex) => {
+                const row = document.createElement('div');
+                row.className = 'qubit-row';
+
+                // Context Menu for Row
+                row.addEventListener('contextmenu', (e) => showContextMenu(e, 'qubit', rowIndex));
+
+                // Label
+                const label = document.createElement('div');
+                label.className = 'qubit-label';
+                label.textContent = qubitState;
+                label.onclick = () => toggleQubit(rowIndex);
+                // Context Menu for Label
+                label.addEventListener('contextmenu', (e) => showContextMenu(e, 'qubit', rowIndex));
+                row.appendChild(label);
+
+                // Wire
+                const wire = document.createElement('div');
+                wire.className = 'wire';
+                wire.style.width = `${totalCols * CONFIG.cellSize}px`;
+                row.appendChild(wire);
+
+                // Cells
+                for (let colIndex = 0; colIndex < totalCols; colIndex++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = rowIndex;
+                    cell.dataset.col = colIndex;
+
+                    // Check for gate
+                    const gateType = state.gates[rowIndex][colIndex];
+                    if (gateType && gateType !== "") {
+                        const gate = createGateElement(gateType);
+                        // Add click to remove
+                        gate.onclick = (e) => {
+                            e.stopPropagation();
+                            removeGate(rowIndex, colIndex);
+                        };
+                        cell.appendChild(gate);
+                    }
+
+                    // Drag events
+                    cell.ondragover = handleDragOver;
+                    cell.ondragenter = handleDragEnter;
+                    cell.ondragleave = handleDragLeave;
+                    cell.ondrop = handleDrop;
+
+                    row.appendChild(cell);
+                }
+
+                rowsContainer.appendChild(row);
+            });
+
+            drawConnections();
+        }
+
+        function createGateElement(type) {
+            const el = document.createElement('div');
+            el.className = `gate gate-${type}`;
+            el.draggable = true;
+
+            if (type === 'Control') {
+                // Dot
+            } else if (type === 'Target') {
+                el.textContent = '⊕';
+            } else {
+                el.textContent = type;
+            }
+
+            // Context Menu for Gate
+            el.addEventListener('contextmenu', (e) => showContextMenu(e, 'gate', type));
+
+            // Allow dragging already placed gates (move)
+            el.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', type);
+                e.dataTransfer.setData('source-row', el.parentElement.dataset.row);
+                e.dataTransfer.setData('source-col', el.parentElement.dataset.col);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => el.style.opacity = '0.5', 0);
+            };
+            el.ondragend = (e) => {
+                el.style.opacity = '1';
+                // If drop failed, re-render to restore opacity
+                // render(); 
+            };
+
+            return el;
+        }
+
+        function drawConnections() {
+            // Find columns with connections
+            const maxCols = Math.max(...state.gates.map(r => r.length), 0);
+
+            for (let col = 0; col < maxCols; col++) {
+                let controls = [];
+                let targets = [];
+                state.gates.forEach((row, rowIndex) => {
+                    if (row[col] === 'Control') controls.push(rowIndex);
+                    if (row[col] === 'Target') targets.push(rowIndex);
+                });
+
+                // Draw lines between Controls and Targets in the same column
+                if (controls.length > 0 && targets.length > 0) {
+                    const allPoints = [...controls, ...targets].sort((a, b) => a - b);
+                    const minRow = allPoints[0];
+                    const maxRow = allPoints[allPoints.length - 1];
+
+                    const x = (col * CONFIG.cellSize) + (CONFIG.cellSize / 2);
+                    const y1 = (minRow * CONFIG.cellSize) + (CONFIG.cellSize / 2);
+                    const y2 = (maxRow * CONFIG.cellSize) + (CONFIG.cellSize / 2);
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('class', 'connection-line');
+                    connectionsLayer.appendChild(line);
+                }
+            }
+        }
+
+        // --- Logic ---
+
+        function setupDragAndDrop() {
+            // Palette items
+            document.querySelectorAll('.sidebar .gate').forEach(gate => {
+                gate.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', gate.dataset.type);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }
+
+        function handleDragEnter(e) {
+            e.target.closest('.cell').classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.target.closest('.cell').classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const cell = e.target.closest('.cell');
+            cell.classList.remove('drag-over');
+
+            const type = e.dataTransfer.getData('text/plain');
+            const targetRow = parseInt(cell.dataset.row);
+            const targetCol = parseInt(cell.dataset.col);
+
+            // Handle Move (if source exists)
+            const sourceRow = e.dataTransfer.getData('source-row');
+            const sourceCol = e.dataTransfer.getData('source-col');
+
+            if (sourceRow && sourceCol) {
+                // Remove from old position
+                setGate(parseInt(sourceRow), parseInt(sourceCol), "");
+            }
+
+            // Place in new position
+            setGate(targetRow, targetCol, type);
+            render();
+        }
+
+        function setGate(row, col, type) {
+            // Ensure row exists (it should)
+            if (!state.gates[row]) state.gates[row] = [];
+
+            // Pad with empty strings if placing beyond current length
+            while (state.gates[row].length <= col) {
+                state.gates[row].push("");
+            }
+            state.gates[row][col] = type;
+            // Cleanup trailing empty strings? Maybe not needed for UI, but good for data
+            // Let's keep them for now to maintain grid stability
+        }
+
+        function removeGate(row, col) {
+            if (state.gates[row] && state.gates[row][col]) {
+                state.gates[row][col] = "";
+                render();
+            }
+        }
+
+        function toggleQubit(index) {
+            state.qubits[index] = state.qubits[index] === '|0⟩' ? '|1⟩' : '|0⟩';
+            render();
+        }
+
+        function addQubit() {
+            state.qubits.push('|0⟩');
+            state.gates.push([]);
+            render();
+        }
+
+        function clearCircuit() {
+            state.gates = state.qubits.map(() => []);
+            render();
+            showStatus('Circuit cleared', 'text-yellow-400');
+        }
+
+        function showStatus(msg, colorClass = 'text-green-400') {
+            statusMsg.textContent = msg;
+            statusMsg.className = `ml-auto text-sm font-medium opacity-100 transition-opacity ${colorClass}`;
+            setTimeout(() => {
+                statusMsg.classList.remove('opacity-100');
+                statusMsg.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        async function executeCircuit() {
+            // 1. Normalize Matrix (Smart Trimming)
+            // Find the last column index that has a gate
+            let maxColIndex = -1;
+            state.gates.forEach(row => {
+                row.forEach((gate, colIndex) => {
+                    if (gate && gate !== "") {
+                        maxColIndex = Math.max(maxColIndex, colIndex);
+                    }
+                });
+            });
+
+            // Trim length is maxColIndex + 1 (because index is 0-based)
+            // Ensure at least 1 column if empty
+            const trimLength = Math.max(maxColIndex + 1, 1);
+
+            // Create a clean copy with padding up to trimLength
+            const normalizedGates = state.gates.map(row => {
+                const newRow = row.slice(0, trimLength);
+                while (newRow.length < trimLength) {
+                    newRow.push("");
+                }
+                // Also ensure undefined/null becomes ""
+                return newRow.map(g => g || "");
+            });
+
+            // 2. Prepare Payload
+            const payload = {
+                qubits: state.qubits.reduce((acc, val, idx) => {
+                    acc[idx] = val;
+                    return acc;
+                }, {}),
+                gates: normalizedGates
+            };
+
+            console.log("Sending Payload:", payload);
+            showStatus('Running simulation...', 'text-blue-400');
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                console.log("Result:", data);
+                showStatus('Execution successful!', 'text-green-400');
+
+                // Render Results
+                if (data.latex) {
+                    renderResults(data.latex);
+                } else {
+                    // Fallback if no latex
+                    resultsContent.textContent = JSON.stringify(data, null, 2);
+                    toggleResults(true);
+                }
+
+            } catch (error) {
+                console.error("Execution failed:", error);
+                showStatus('Execution failed. Check console.', 'text-red-500');
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+
+</html>
