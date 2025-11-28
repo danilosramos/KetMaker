@@ -38,10 +38,10 @@ venv\Scripts\Activate.ps1
 
 ### 2.3. Instalar Dependências
 
-O projeto utiliza o Flask. As dependências serão instaladas a partir de um arquivo `requirements.txt` (a ser criado). Por enquanto, instale o Flask manualmente:
+As dependências do projeto estão listadas no arquivo `software/backend/requirements.txt`. Instale-as usando:
 
 ```bash
-pip install Flask
+pip install -r software/backend/requirements.txt
 ```
 
 ## 3. Configuração
