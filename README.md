@@ -1,7 +1,7 @@
 # KetMaker - Projeto Integrador I
 
 > 🎓 **Projeto Acadêmico para a disciplina DEC0013-04655 (20252) – Projeto Integrador I**
-> Aplicação web para criação e gerenciamento de dietas cetogênicas.
+> Aplicação web para simulação e visualização de circuitos quânticos.
 
 ![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow)
 ![Version](https://img.shields.io/badge/Version-0.1.0-green)
@@ -10,13 +10,13 @@
 
 ## 📋 Visão Geral
 
-Este repositório contém o código-fonte e a documentação do projeto **KetMaker**, desenvolvido como parte da disciplina de Projeto Integrador I. O objetivo do projeto é criar uma aplicação web que auxilie na criação e gerenciamento de dietas cetogênicas, com base nas informações fornecidas no Documento de Requisitos de Software.
+Este repositório contém o código-fonte e a documentação do projeto **KetMaker**, desenvolvido como parte da disciplina de Projeto Integrador I. O objetivo do projeto é criar uma aplicação web interativa que simule e visualize circuitos quânticos de forma didática e acessível, conforme detalhado no Documento de Detalhamento de Software.
 
 ### 🎯 Objetivos do Projeto
 
-- ✅ **Facilitar a criação de dietas cetogênicas:** Permitir que os usuários criem planos de dieta personalizados.
-- ✅ **Gerenciar alimentos e receitas:** Manter um banco de dados de alimentos e receitas adequados para a dieta cetogênica.
-- ✅ **Acompanhar o progresso do usuário:** Fornecer ferramentas para que os usuários monitorem seu progresso.
+- ✅ **Composição de Circuitos:** Permitir que os usuários montem circuitos quânticos via interface de arrastar e soltar.
+- ✅ **Simulação Quântica:** Executar a simulação do circuito no backend (Ket Library).
+- ✅ **Visualização de Resultados:** Apresentar o estado quântico final em formato de texto e LaTeX.
 - ✅ **Interface amigável:** Desenvolver uma interface de usuário intuitiva e fácil de usar.
 
 ## 🏗️ Arquitetura do Projeto
@@ -38,15 +38,15 @@ KetMaker/
 
 ### 1. **Configuração do Ambiente**
 
-As instruções detalhadas de instalação e configuração do ambiente de desenvolvimento serão adicionadas em um arquivo `INSTALL.md` em breve.
+As instruções detalhadas de instalação e configuração do ambiente de desenvolvimento estão no arquivo [`INSTALL.md`](INSTALL.md).
 
 ### 2. **Executando o Projeto**
 
-As instruções sobre como executar o projeto localmente também serão detalhadas no arquivo `INSTALL.md`.
+As instruções sobre como executar o projeto localmente estão detalhadas no arquivo [`INSTALL.md`](INSTALL.md).
 
 ## 📚 Documentação
 
-A documentação do projeto, incluindo o Documento de Requisitos de Software, está localizada na pasta `/docs`.
+A documentação completa do projeto está localizada na pasta [`docs/`](docs/). Inclui: \n- **Documento de Detalhamento de Software:** [`docs/DETALHAMENTO_SOFTWARE.md`](docs/DETALHAMENTO_SOFTWARE.md)\n- **Documento de Testes:** [`docs/DOCUMENTO_DE_TESTES.md`](docs/DOCUMENTO_DE_TESTES.md)\n- **Diagramas UML:** [`docs/DIAGRAMA_CLASSES.md`](docs/DIAGRAMA_CLASSES.md) e [`docs/DIAGRAMA_SEQUENCIA.md`](docs/DIAGRAMA_SEQUENCIA.md)\n- **Documento de Requisitos Original:** [`docs/requisitos/Requisitos_de_Software.pdf`](docs/requisitos/Requisitos_de_Software.pdf)
 
 ## 🤝 Contribuindo
 

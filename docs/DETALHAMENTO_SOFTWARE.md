@@ -82,7 +82,7 @@ O frontend é composto por arquivos estáticos, utilizando bibliotecas de tercei
 
 ## 4. Instalação
 
-O passo a passo detalhado para a instalação e configuração do ambiente está documentado no arquivo **`INSTALL.md`** na raiz do repositório.
+O passo a passo detalhado para a instalação e configuração do ambiente está documentado no arquivo **[`INSTALL.md`](../INSTALL.md)** na raiz do repositório.
 
 ### Pré-requisitos
 
@@ -97,7 +97,7 @@ git clone https://github.com/danilosramos/KetMaker.git
 cd KetMaker
 
 # Instalar dependências (após criar o requirements.txt)
-pip install -r requirements.txt
+pip install -r ../software/backend/requirements.txt
 
 # Executar o servidor
 flask run
@@ -109,9 +109,9 @@ flask run
 
 ### Como Rodar o Projeto Localmente
 
-1.  Siga os passos de instalação em `INSTALL.md`.
+1.  Siga os passos de instalação em [`INSTALL.md`](../INSTALL.md).
 2.  Ative o ambiente virtual.
-3.  Defina as variáveis de ambiente (se necessário, conforme `INSTALL.md`).
+3.  Defina as variáveis de ambiente (se necessário, conforme [`INSTALL.md`](../INSTALL.md)).
 4.  Execute o comando `flask run` no diretório raiz do projeto.
 
 ### Configuração de Banco de Dados
