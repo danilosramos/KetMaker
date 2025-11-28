@@ -51,7 +51,3 @@ A documentação completa do projeto está localizada na pasta [`docs/`](docs/).
 ## 🤝 Contribuindo
 
 Este é um projeto acadêmico e, no momento, não está aberto a contribuições externas.
-
-## 📄 Licença
-
-Este projeto está licenciado sob a [Licença MIT](LICENSE) - veja o arquivo para detalhes.
