@@ -23,9 +23,6 @@ def processar_dados():
         'state': {k: str(v) for k,v in state.get().items()},
         'latex': state.show(mode='latex').data
     }
-    
-    print(state_formatado)
-    
     return jsonify(state_formatado)
 
 
