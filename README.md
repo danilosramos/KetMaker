@@ -50,7 +50,6 @@ A documentação completa do projeto está localizada na pasta [`docs/`](docs/).
 - **Documento de Detalhamento de Software:** [`docs/DETALHAMENTO_SOFTWARE.md`](docs/DETALHAMENTO_SOFTWARE.md)
 - **Documento de Testes:** [`docs/DOCUMENTO_DE_TESTES.md`](docs/DOCUMENTO_DE_TESTES.md)
 - **Diagramas UML:** [`docs/DIAGRAMA_CLASSES.md`](docs/DIAGRAMA_CLASSES.md) e [`docs/DIAGRAMA_SEQUENCIA.md`](docs/DIAGRAMA_SEQUENCIA.md)
-- **Documento de Requisitos Original:** [`docs/requisitos/Requisitos_de_Software.pdf`](docs/requisitos/Requisitos_de_Software.pdf)
 
 ## 🤝 Contribuindo
 
