@@ -165,7 +165,7 @@ KetMaker/
 
 ### Prints das Telas do Sistema
 
-*(Neste ponto, o documento seria complementado com capturas de tela da interface principal, da paleta de gates e da área de resultados. Exemplo de legenda: "Figura 1: Interface principal do KetMaker, mostrando a área de composição do circuito e a paleta de gates.")*
+<img width="1917" height="946" alt="image" src="https://github.com/user-attachments/assets/e07dfc78-5aea-4980-9d7d-06ef0918d844" />
 
 ### Fluxo de Navegação
 
